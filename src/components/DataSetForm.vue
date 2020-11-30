@@ -48,12 +48,15 @@
       </div>
       <div class="templates__seleceted">
         <object :data="selectedTemplate" type="" id="selectedTemplate" @load="applyTemplate"></object>
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas" style="background: #fff;"></canvas>
       </div>
     </div>
     <div>
       <button @click="downloadFile">
-        Save File
+        Save as PNG
+      </button>
+      <button @click="downloadFileAsPDF">
+        Save As PDF
       </button>
     </div>
     <hr />
@@ -63,6 +66,7 @@
 
 <script>
 import { saveAs } from 'file-saver'
+import { jsPDF } from 'jspdf'
 
 export default {
   name: 'DataSetForm',
@@ -77,6 +81,12 @@ export default {
       selectedTemplate: '',
       svgData: '',
       imgURI: '',
+      obj: '',
+      canvasWidth: '',
+      canvasHeight: '',
+      dragOffsetX: null,
+      dragOffsetY: null,
+      dragActive: ''
     }
   },
   methods: {
@@ -105,10 +115,13 @@ export default {
         this.setImages(obj, '__x003c_PROJECTIMAGEPANEL_x003e_', this.projectImage)
         this.applyText(obj)
         const svg = obj.getElementsByTagName('svg')[0]
-        const viewBox = svg.getAttribute('viewBox').split(' ')
+        // svg.getElementsByTagName('rect')[0].remove()
         this.svgData = svg
 
+        const viewBox = svg.getAttribute('viewBox').split(' ')
         this.drawToCanvas(viewBox[2], viewBox[3])
+        this.obj = document.getElementById('selectedTemplate').contentDocument
+
       } else {
         alert('All fields are required')
       }
@@ -119,6 +132,7 @@ export default {
     clickImage(key) {
       if (this.projectLogo && this.projectImage && this.projectName && this.versionDate){
         this.selectedTemplate = key
+
       } else {
         alert('All fields are required')
       }
@@ -133,11 +147,13 @@ export default {
 
       img.setAttribute('class', '')
       img.setAttribute('fill', 'transparent')
+      img.remove()
+      const newSVG = this.createSVG(x, y, width, height, src, id)
+      // parent.insertBefore( newSVG, parent.firstChild)
+      parent.append(newSVG)
 
-      const newSVG = this.createSVG(x, y, width, height, src)
-      parent.insertBefore( newSVG, parent.firstChild)
     },
-    createSVG(x, y, width, height, src) {
+    createSVG(x, y, width, height, src, id,) {
       const svgns = "http://www.w3.org/2000/svg";
       const newImg = document.createElementNS(svgns, 'image');
       newImg.setAttribute('x', x)
@@ -145,9 +161,17 @@ export default {
       newImg.setAttribute('width', width)
       newImg.setAttribute('height', height)
       newImg.setAttribute('href', src)
+      newImg.setAttribute('id', id)
+      // Adding events
+      
+      // newImg.addEventListener('dblclick', this.setDragActive)
+      newImg.addEventListener('mousedown', this.drag)
+      newImg.addEventListener('mouseup', this.drop)
       return newImg
     },
     applyText(obj) {
+      const parent = obj.getElementById('Layer_x0020_1')
+      const svgns = "http://www.w3.org/2000/svg";
       const texts = obj.getElementsByTagName('text')
       const infoPanel = obj.getElementById('__x003c_PROJECTINFOPANEL_x003e_')
 
@@ -159,46 +183,125 @@ export default {
       for (var key in texts) {
         if (texts.hasOwnProperty(key)) {
           if(texts[key].innerHTML.includes('PROJECTNAME')) {
-            texts[key].innerHTML = this.projectName
+            // texts[key].innerHTML = this.projectName
+            const x = texts[key].getAttribute('x')
+            const y = texts[key].getAttribute('y')
+            const classList = texts[key].getAttribute('class')
+            texts[key].remove()
+
+            const newText = document.createElementNS(svgns, 'text')
+            newText.setAttribute('x', x)
+            newText.setAttribute('y', y)
+            newText.setAttribute('class', classList)
+            newText.innerHTML = this.projectName
+            
+            parent.append(newText)
           }
           if(texts[key].innerHTML.includes('VERSIONDATE')) {
-            texts[key].innerHTML = this.versionDate
+            // texts[key].innerHTML = this.versionDate
+            const x = texts[key].getAttribute('x')
+            const y = texts[key].getAttribute('y')
+            const classList = texts[key].getAttribute('class')
+            texts[key].remove()
+            
+            const newText = document.createElementNS(svgns, 'text')
+            newText.setAttribute('x', x)
+            newText.setAttribute('y', y)
+            newText.setAttribute('class', classList)
+            newText.innerHTML = this.versionDate
+            
+            parent.append(newText)
           }
         }
       }
     },
     drawToCanvas(width, height) {
-      var canvas = document.getElementById('canvas');
-      var ctx = canvas.getContext('2d');
-      var data = (new XMLSerializer()).serializeToString(this.svgData);
-      var DOMURL = window.URL || window.webkitURL || window;
+      this.svgData.getElementsByTagName('rect')[0].setAttribute('fill', '#fff')
+      this.svgData.getElementsByTagName('rect')[0].setAttribute('class', 'str0') // <-- Might Change
+      
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const data = (new XMLSerializer()).serializeToString(this.svgData);
+      const DOMURL = window.URL || window.webkitURL || window;
+
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
+      this.canvasWidth = width
+      this.canvasHeight = height
 
       canvas.setAttribute('width', width)
       canvas.setAttribute('height', height)
 
-      var img = new Image();
-      var svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
-      var url = DOMURL.createObjectURL(svgBlob);
+      const img = new Image();
+      const svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
+      const url = DOMURL.createObjectURL(svgBlob);
 
       img.onload = function () {
         ctx.drawImage(img, 0, 0, width-5, height-5)
         DOMURL.revokeObjectURL(url)
 
-        var imgURI = canvas
-            .toDataURL('image/png')
-            .replace('image/png', 'image/octet-stream');
+        const imgURI = canvas
+            .toDataURL('image/jpeg')
+            .replace('image/jpeg', 'image/octet-stream');
 
         this.imgURI = imgURI
-        // triggerDownload(imgURI);
       };
 
       img.src = url;
     },
     downloadFile() {
-      var canvas = document.getElementById("canvas");
+      const canvas = document.getElementById("canvas");
       canvas.toBlob(function(blob) {
           saveAs(blob, "Generated Template.png");
       }, "image/png");
+    },
+    downloadFileAsPDF() {
+      const canvas = document.getElementById("canvas");
+      const imgData = canvas.toDataURL("image/jpeg", 1.0)
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: [this.canvasWidth, this.canvasHeight]
+      })
+      pdf.setFillColor('#ffffff')
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, this.canvasWidth, this.canvasHeight)
+      pdf.save('Generated Template.pdf')
+    },
+    drag({offsetX, offsetY, target, detail}) {
+      if (detail == 2) {
+        this.dragActive = target.id
+      }
+      if (this.dragActive) {
+        this.dragOffsetY = offsetY - this.obj.getElementById(this.dragActive).y.baseVal.value
+        this.dragOffsetX = offsetX - this.obj.getElementById(this.dragActive).x.baseVal.value
+  
+        this.obj.getElementsByTagName('svg')[0].addEventListener('mousemove', this.move)
+      }
+
+      // this.dragOffsetX = offsetX - this.square.x;
+      // this.dragOffsetY = offsetY - this.square.y;\
+      // this.dragOffsetX = offsetX - target.x.baseVal.value
+      // this.dragOffsetY = offsetY - target.y.baseVal.value
+    },
+    drop() {
+      this.dragOffsetX = this.dragOffsetY = this.dragActive = null;
+      this.obj.getElementsByTagName('svg')[0].removeEventListener('mousemove', this.move)
+
+      // const viewBox = this.svgData.getAttribute('viewBox').split(' ')
+      // this.drawToCanvas(viewBox[2], viewBox[3])
+
+    },
+    move({offsetX, offsetY, target}) {
+      let x = offsetX - this.dragOffsetX
+      let y = offsetY - this.dragOffsetY
+      
+      this.obj.getElementById(this.dragActive).x.baseVal.value = x
+      this.obj.getElementById(this.dragActive).y.baseVal.value = y
+
+      // this.square.x = offsetX - this.dragOffsetX;
+      // this.square.y = offsetY - this.dragOffsetY;
     }
   },
   mounted() {
@@ -270,5 +373,9 @@ button {
 
 #canvas {
   display: none;
+}
+
+.fill-white {
+  fill: #fff;
 }
 </style>
