@@ -1,13 +1,11 @@
 <template>
   <div class="form-container">
-    <h1>Pro-UP</h1>
-    <hr />
-    <div class="inputs-container">
-      <div>
+    <!-- <div class="inputs-container">
+      <div class="input-group">
         <label for="projectName">Project Name </label>
         <input type="text" v-model="projectName" id="projectName">
       </div>
-      <div>
+      <div class="input-group">
         <label for="versionDate"> Version Date </label>
         <input type="date" v-model="versionDate" id="versionDate">
       </div>
@@ -21,7 +19,7 @@
           style="display: none"
           @change="onProjectImageUpload"
         >
-        <img :src="projectImage" width="80px" />
+        <img :src="projectImage" width="40px" />
       </div>
       <div class="template-image">
         <label for="projectLogo"> Logo <span>(click to Select)</span></label>
@@ -33,16 +31,25 @@
           style="display: none"
           @change="onProjectImageUpload"
         >
-        <img :src="projectLogo" width="80px" />
+        <img :src="projectLogo" width="40px" />
       </div>
-    </div>
+    </div> -->
+    <!-- <div class="form-actions">
+      <div v-if="selectedTemplate">
+        <button @click="downloadFile">
+          Save as PNG
+        </button>
+        <button @click="downloadFileAsPDF">
+          Save As PDF
+        </button>
+      </div>
+    </div> -->
     <div class="templates">
       <div class="templates__choices">
         <img v-for="image in templates" :key="image.key"
           name="svg-images"
           type="image/svg+xml"
           :src="image.pathLong"
-          width="300px"
           @click="clickImage(image.pathLong)"
         />
       </div>
@@ -51,16 +58,6 @@
         <canvas id="canvas" style="background: #fff;"></canvas>
       </div>
     </div>
-    <div>
-      <button @click="downloadFile">
-        Save as PNG
-      </button>
-      <button @click="downloadFileAsPDF">
-        Save As PDF
-      </button>
-    </div>
-    <hr />
-
   </div>
 </template>
 
@@ -270,14 +267,15 @@ export default {
       pdf.save('Generated Template.pdf')
     },
     drag({offsetX, offsetY, target, detail}) {
-      if (detail == 2) {
+      // if (detail == 2) {
         this.dragActive = target.id
-      }
+      // }
       if (this.dragActive) {
         this.dragOffsetY = offsetY - this.obj.getElementById(this.dragActive).y.baseVal.value
         this.dragOffsetX = offsetX - this.obj.getElementById(this.dragActive).x.baseVal.value
   
         this.obj.getElementsByTagName('svg')[0].addEventListener('mousemove', this.move)
+        this.obj.getElementsByTagName('svg')[0].addEventListener('mouseup', this.drop)
       }
 
       // this.dragOffsetX = offsetX - this.square.x;
@@ -288,7 +286,7 @@ export default {
     drop() {
       this.dragOffsetX = this.dragOffsetY = this.dragActive = null;
       this.obj.getElementsByTagName('svg')[0].removeEventListener('mousemove', this.move)
-
+      this.obj.getElementsByTagName('svg')[0].removeEventListener('mouseup', this)
       // const viewBox = this.svgData.getAttribute('viewBox').split(' ')
       // this.drawToCanvas(viewBox[2], viewBox[3])
 
@@ -315,20 +313,47 @@ button {
   cursor: pointer;
 }
 
-.form-container h1 {
-  margin: 10px 30px;
-  
+.form-container {
+  border: 2px solid #aaa;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  grid-auto-rows: 1fr auto;
 }
 
 .inputs-container {
   margin: 0 30px;
   line-height: 2;
-  max-width: 300px;
+  max-width: 350px;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.input-group input {
+  width: calc(100% - 100px);
+}
+
+.input-group label {
+  white-space: nowrap;
+}
+
+.form-actions {
+  justify-content: flex-end;
+  align-items: flex-end;
+  display: flex;
+  padding: 15px;
+  min-height: 50px;
 }
 
 .template-image label {
   cursor: pointer;
+  margin: 10px 10px 10px 0
 }
+
 .template-image span {
   color: silver;
   font-size: 10px;
@@ -336,7 +361,7 @@ button {
 
 .template-image {
   display: flex;
-  flex-direction: column;
+  position: relative;
 }
 
 .template-image label:hover {
@@ -344,18 +369,30 @@ button {
   color: #5a4dff
 }
 
+.template-image img {
+  position: absolute;
+  right: 20px;
+}
+
 .templates {
   display: grid;
-  grid-template-columns: 1fr 3fr;
+  grid-template-columns: minmax(250px, 1fr) 3fr;
+  grid-column: 1 / 3;
+  /* border-top: 1px solid #ccc; */
 }
 
 .templates__choices {
-  padding: 30px 15px
+  padding: 30px 15px;
+  height: calc(100vh - 61px); /* 200px might change */
+  overflow-y: scroll;
 }
 
 .templates__choices img {
   margin-bottom: 10px;
   cursor: pointer;
+  contain: content;
+  max-width: 100%;
+  max-height: 100%;
 }
 .templates__choices img:hover {
   outline: solid 5px aqua;
@@ -363,7 +400,7 @@ button {
 
 .templates__seleceted {
   width: 100%;
-  padding: 30px
+  padding: 10px
 }
 
 #selectedTemplate {
