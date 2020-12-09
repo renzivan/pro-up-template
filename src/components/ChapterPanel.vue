@@ -88,9 +88,11 @@ export default {
 }
 
 .chapter__pages-container {
-  max-height: calc(100vh - 340px); /* 340px temporary */
+  max-height: calc(100vh - 365px); /* 340px temporary */
   overflow-y: scroll;
-  display: none;
+  height: 0;
+  opacity: 0;
+  transition: height .2s ease-in-out, opacity .5s;
 }
 
 .chapter__pages {
@@ -132,7 +134,11 @@ export default {
 .panel-open {
   display: block;
 }
-
+.panel-open.chapter__pages-container {
+  height: calc(100vh - 365px);
+  transition: height .2s ease-in-out, opacity .5s;
+  opacity: 1;
+}
 .panel-open::after {
   transform: rotate(180deg);
 }

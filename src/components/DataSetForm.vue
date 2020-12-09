@@ -134,7 +134,7 @@ export default {
         alert('All fields are required')
       }
     },
-    setImages(obj, id, src) {
+    setImages(obj, id, src) { // for public function
       const parent = obj.getElementById('Layer_x0020_1')
       const img = obj.getElementById(id)
       const x = img.getAttribute('x') || 0
@@ -150,7 +150,7 @@ export default {
       parent.append(newSVG)
 
     },
-    createSVG(x, y, width, height, src, id,) {
+    createSVG(x, y, width, height, src, id,) { // for public function
       const svgns = "http://www.w3.org/2000/svg";
       const newImg = document.createElementNS(svgns, 'image');
       newImg.setAttribute('x', x)
@@ -166,7 +166,7 @@ export default {
       newImg.addEventListener('mouseup', this.drop)
       return newImg
     },
-    applyText(obj) {
+    applyText(obj) { // possible for public function
       const parent = obj.getElementById('Layer_x0020_1')
       const svgns = "http://www.w3.org/2000/svg";
       const texts = obj.getElementsByTagName('text')
@@ -314,7 +314,7 @@ button {
 }
 
 .form-container {
-  border: 2px solid #aaa;
+  border: 2px solid #ddd;
   border-radius: 6px;
   display: grid;
   grid-template-columns: 3fr 1fr;
@@ -383,7 +383,7 @@ button {
 
 .templates__choices {
   padding: 30px 15px;
-  height: calc(100vh - 61px); /* 200px might change */
+  height: calc(100vh - 75px); /* 200px might change */
   overflow-y: scroll;
 }
 

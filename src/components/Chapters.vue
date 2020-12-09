@@ -1,37 +1,37 @@
 <template>
   <div class="chapters">
-    <ChapterPanelPreface 
+    <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Preface"
       class="red"
       :pages="chapters.preface"
     />
-     <ChapterPanelPreface 
+     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Installation Maps"
       :pages="chapters.preface"
     />
-     <ChapterPanelPreface 
+     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Shop Drawings"
       :pages="chapters.preface"
     />
-     <ChapterPanelPreface 
+     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Sign Proofs"
       :pages="chapters.preface"
     />
-     <ChapterPanelPreface 
+     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Message Schedule"
       :pages="chapters.preface"
     />
-     <ChapterPanelPreface 
+     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Evacuation Maps"
       :pages="chapters.preface"
     />
-     <ChapterPanelPreface 
+     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Takeoff"
       :pages="chapters.preface"
@@ -40,11 +40,11 @@
 </template>
 
 <script>
-  import ChapterPanelPreface from './ChapterPanelPreface'
+  import ChapterPanel from './ChapterPanel'
 
 export default {
   components: {
-    ChapterPanelPreface
+    ChapterPanel
   },
   data() {
     return {
