@@ -19,6 +19,7 @@
 import SearchProjectPanel from './toolbox/SearchProjectPanel'
 import LegendPanel from './toolbox/LegendPanel'
 import TasksPanel from './toolbox/TasksPanel'
+import accordion from '@/assets/js/accordion'
 
 export default {
   components: {
@@ -38,18 +39,7 @@ export default {
       })
     },
     togglePanel() {
-      if (!event.currentTarget.classList.contains('panel-open')) {
-        // // this.$emit('updateToolboxPanelState')
-        // this.updateToolboxPanelState()
-        event.currentTarget.classList.add('panel-open')
-        event.currentTarget.nextSibling.classList.add('panel-open')
-        // console.log(event.currentTarget.nextSibling)
-      } else {
-        // this.$emit('updateToolboxPanelState')
-        // this.updateToolboxPanelState()
-        event.currentTarget.classList.remove('panel-open')
-        event.currentTarget.nextSibling.classList.remove('panel-open')
-      }
+      accordion.openPanel(event, '.toolbox__content-container')
     }
   }
 }

@@ -3,7 +3,6 @@
     <ChapterPanel 
       @updatePanelState="updatePanelState"
       chapterName="Preface"
-      class="red"
       :pages="chapters.preface"
     />
      <ChapterPanel 

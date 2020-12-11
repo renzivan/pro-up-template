@@ -1,16 +1,12 @@
 <template>
   <div class="chapter__panel">
     <div class="chapter__panel-header" @click="togglePanel">
-       <!-- :class="{'panel-open' : panelState}" -->
       <p>{{chapterName}}</p>
     </div>
     <div class="chapter__pages-container">
       <div class="chapter__pages" v-for="page in pages" :key="page.name">
         <p>{{ page.name }}</p>
-        <!-- <img class="chapter__pages-thumb" src="../assets/images/pages/cover.png" alt=""> -->
         <img class="chapter__pages-thumb" :src="thumbnail(page.thumb)" alt="">
-        <!-- <img class="chapter__pages-thumb" :src="page.thumb" alt=""> -->
-        <!-- <img class="chapter__pages-thumb" :src="`~@/assets/images/pages/${ page.thumb }.png`" alt=""> -->
         <div class="chapter__pages-control">
           <span class="chapter__control icon-down"></span>
           <span class="chapter__control icon-up"></span>
@@ -66,26 +62,7 @@ export default {
   cursor: pointer;
 }
 
-.icon-x {
-  background: #555 url('~@/assets/images/icons/x.svg') no-repeat;
-  background-position: center;
 
-}
-.icon-plus {
-  background: #555 url('~@/assets/images/icons/plus.svg') no-repeat;
-  background-position: center;
-
-}
-.icon-up {
-  background: #555 url('~@/assets/images/icons/up.svg') no-repeat;
-  background-position: center;
-
-}
-.icon-down {
-  background: #555 url('~@/assets/images/icons/down.svg') no-repeat;
-  background-position: center;
-
-}
 
 .chapter__pages-container {
   max-height: calc(100vh - 365px); /* 340px temporary */
@@ -108,13 +85,12 @@ export default {
   background: #F9F9F9;
   padding: 10px 15px;
   font-size: 16px;
-  /* border-radius: 5px 5px 0 0; */
   position: relative;
   cursor: pointer;
-  -webkit-user-select: none; /* Chrome/Safari */        
-  -moz-user-select: none; /* Firefox */
+  -webkit-user-select: none;      
+  -moz-user-select: none;
   border-bottom: 1px solid #ddd;
-  -ms-user-select: none; /* IE10+ */
+  -ms-user-select: none; 
 }
 
 .chapter__panel-header::after {

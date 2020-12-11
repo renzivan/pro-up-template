@@ -1,59 +1,36 @@
 <template>
   <div class="form-container">
-    <!-- <div class="inputs-container">
-      <div class="input-group">
-        <label for="projectName">Project Name </label>
-        <input type="text" v-model="projectName" id="projectName">
-      </div>
-      <div class="input-group">
-        <label for="versionDate"> Version Date </label>
-        <input type="date" v-model="versionDate" id="versionDate">
-      </div>
-      <div class="template-image">
-        <label for="projectImage"> Project Image <span>(click to Select)</span></label>
-        <input
-          type="file"
-          accept="image/*"
-          name="projectImage"
-          id="projectImage"
-          style="display: none"
-          @change="onProjectImageUpload"
-        >
-        <img :src="projectImage" width="40px" />
-      </div>
-      <div class="template-image">
-        <label for="projectLogo"> Logo <span>(click to Select)</span></label>
-        <input
-          type="file"
-          accept="image/*"
-          name="projectLogo"
-          id="projectLogo"
-          style="display: none"
-          @change="onProjectImageUpload"
-        >
-        <img :src="projectLogo" width="40px" />
-      </div>
-    </div> -->
-    <!-- <div class="form-actions">
-      <div v-if="selectedTemplate">
-        <button @click="downloadFile">
-          Save as PNG
-        </button>
-        <button @click="downloadFileAsPDF">
-          Save As PDF
-        </button>
-      </div>
-    </div> -->
     <div class="templates">
       <div class="templates__choices">
-        <img v-for="image in templates" :key="image.key"
-          name="svg-images"
-          type="image/svg+xml"
-          :src="image.pathLong"
-          @click="clickImage(image.pathLong)"
-        />
+        <div v-for="image in templates" :key="image.key" class="templates__choice">
+          <div class="templates__controls">
+            <span class="templates__control icon-down"></span>
+            <span class="templates__control icon-up"></span>
+            <span class="templates__control icon-plus"></span>
+            <span class="templates__control icon-x"></span>
+          </div>
+          <img 
+            name="svg-images"
+            type="image/svg+xml"
+            :src="image.pathLong"
+            @click="clickImage(image.pathLong)"
+          />
+        </div>
       </div>
       <div class="templates__seleceted">
+        <div class="form-actions">
+          <div>
+            <button class="proceed-button btn btn-warning" @click="previousPage">Back</button>
+          </div>
+          <div v-if="selectedTemplate">
+            <button class="btn btn-info" @click="downloadFile">
+              Save as PNG
+            </button>
+            <button class="btn btn-info" @click="downloadFileAsPDF">
+              Save As PDF
+            </button>
+          </div>
+        </div>
         <object :data="selectedTemplate" type="" id="selectedTemplate" @load="applyTemplate"></object>
         <canvas id="canvas" style="background: #fff;"></canvas>
       </div>
@@ -64,6 +41,7 @@
 <script>
 import { saveAs } from 'file-saver'
 import { jsPDF } from 'jspdf'
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
   name: 'DataSetForm',
@@ -87,29 +65,17 @@ export default {
     }
   },
   methods: {
-    onProjectImageUpload(e) {
-      const files = e.target.files || e.dataTransfer.files
-      if (!files.length)
-        return
-      this.createImage(files[0], e.target.id)
-    },
-    createImage(file, id) {
-      // const image = new Image()
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        if (id === 'projectImage') {
-          this.projectImage = e.target.result
-        } else {
-          this.projectLogo = e.target.result
-        }
-      }
-      reader.readAsDataURL(file)
+    ...mapActions([
+      'handlePage'
+    ]),
+    previousPage() {
+      this.handlePage(1)
     },
     applyTemplate(evt) {
       const obj = document.getElementById('selectedTemplate').contentDocument
-      if (this.projectLogo && this.projectImage && this.projectName && this.versionDate) {
-        this.setImages(obj, '__x003c_LOGOPANEL_x003e_', this.projectLogo)
-        this.setImages(obj, '__x003c_PROJECTIMAGEPANEL_x003e_', this.projectImage)
+      if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate) {
+        this.setImages(obj, '__x003c_LOGOPANEL_x003e_', this.getProjectLogo)
+        this.setImages(obj, '__x003c_PROJECTIMAGEPANEL_x003e_', this.getProjectImage)
         this.applyText(obj)
         const svg = obj.getElementsByTagName('svg')[0]
         // svg.getElementsByTagName('rect')[0].remove()
@@ -127,7 +93,7 @@ export default {
       path.keys().forEach((key, index) => (this.templates.push({key: index, pathLong: path(key), pathShort: key })));
     },
     clickImage(key) {
-      if (this.projectLogo && this.projectImage && this.projectName && this.versionDate){
+      if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate){
         this.selectedTemplate = key
 
       } else {
@@ -180,7 +146,7 @@ export default {
       for (var key in texts) {
         if (texts.hasOwnProperty(key)) {
           if(texts[key].innerHTML.includes('PROJECTNAME')) {
-            // texts[key].innerHTML = this.projectName
+            // texts[key].innerHTML = this.getProjectName
             const x = texts[key].getAttribute('x')
             const y = texts[key].getAttribute('y')
             const classList = texts[key].getAttribute('class')
@@ -190,12 +156,12 @@ export default {
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
             newText.setAttribute('class', classList)
-            newText.innerHTML = this.projectName
+            newText.innerHTML = this.getProjectName
             
             parent.append(newText)
           }
           if(texts[key].innerHTML.includes('VERSIONDATE')) {
-            // texts[key].innerHTML = this.versionDate
+            // texts[key].innerHTML = this.getVersionDate
             const x = texts[key].getAttribute('x')
             const y = texts[key].getAttribute('y')
             const classList = texts[key].getAttribute('class')
@@ -205,7 +171,7 @@ export default {
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
             newText.setAttribute('class', classList)
-            newText.innerHTML = this.versionDate
+            newText.innerHTML = this.getVersionDate
             
             parent.append(newText)
           }
@@ -302,6 +268,15 @@ export default {
       // this.square.y = offsetY - this.dragOffsetY;
     }
   },
+  computed: {
+    ...mapGetters([
+      'getProjectName',
+      'getVersionDate',
+      'getProjectLogo',
+      'getProjectImage',
+      'getPage'
+    ])
+  },
   mounted() {
     this.importAll(require.context('../assets/templates', true, /\.svg$/));
   },
@@ -342,11 +317,15 @@ button {
 }
 
 .form-actions {
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: flex-end;
   display: flex;
-  padding: 15px;
+  padding-bottom: 20px;
   min-height: 50px;
+}
+
+.form-actions button {
+  margin: 5px; 
 }
 
 .template-image label {
@@ -394,6 +373,24 @@ button {
   max-width: 100%;
   max-height: 100%;
 }
+
+.templates__choice {
+  margin-bottom: 10px;
+}
+
+.templates__controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 5px;
+}
+
+.templates__control {
+  width: 14px;
+  height: 14px;
+  margin: 1px;
+  display: inline-block;
+}
+
 .templates__choices img:hover {
   outline: solid 5px aqua;
 }
