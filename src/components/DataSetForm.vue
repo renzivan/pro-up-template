@@ -2,12 +2,12 @@
   <div class="form-container">
     <div class="templates">
       <div class="templates__choices">
-        <div v-for="image in templates" :key="image.key" class="templates__choice">
+        <div v-for="(image, i) in templates" :key="i" class="templates__choice">
           <div class="templates__controls">
-            <span class="templates__control icon-down"></span>
-            <span class="templates__control icon-up"></span>
-            <span class="templates__control icon-plus"></span>
-            <span class="templates__control icon-x"></span>
+            <span class="templates__control icon-down" @click="moveDown(i)"></span>
+            <span class="templates__control icon-up" @click="moveUp(i)"></span>
+            <span class="templates__control icon-plus" @click="addTemplate(i)"></span>
+            <span class="templates__control icon-x" @click="removeTemplate(i)"></span>
           </div>
           <img 
             name="svg-images"
@@ -16,6 +16,13 @@
             @click="clickImage(image.pathLong)"
           />
         </div>
+        <input
+          hidden
+          type="file"
+          accept="image/svg+xml" 
+          id="new-template"
+          @change="onProjectImageUpload">
+        <img src="" alt="" id="tempimg">
       </div>
       <div class="templates__seleceted">
         <div class="form-actions">
@@ -61,7 +68,8 @@ export default {
       canvasHeight: '',
       dragOffsetX: null,
       dragOffsetY: null,
-      dragActive: ''
+      dragActive: '',
+      clickedTemplateIndex: null
     }
   },
   methods: {
@@ -90,11 +98,11 @@ export default {
       }
     },
     importAll(path) {
-      path.keys().forEach((key, index) => (this.templates.push({key: index, pathLong: path(key), pathShort: key })));
+      path.keys().forEach((key, index) => (this.templates.push({pathLong: path(key)})));
     },
-    clickImage(key) {
+    clickImage(image) {
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate){
-        this.selectedTemplate = key
+        this.selectedTemplate = image
 
       } else {
         alert('All fields are required')
@@ -266,7 +274,52 @@ export default {
 
       // this.square.x = offsetX - this.dragOffsetX;
       // this.square.y = offsetY - this.dragOffsetY;
-    }
+    },
+    moveDown(key) {
+      console.log(key)
+      if (key + 1 < this.templates.length ) {
+        const temp = this.templates[key + 1]
+        this.$set(this.templates, key + 1, this.templates[key])
+        this.$set(this.templates, key , temp)
+      } else {
+        alert('Last item')
+      }
+    },
+    moveUp(key) {
+      console.log(key)
+      if (key !== 0 ) {
+        const temp = this.templates[key - 1]
+        this.$set(this.templates, key - 1, this.templates[key])
+        this.$set(this.templates, key , temp)
+      } else {
+        alert('Top Item')
+      }
+    },
+    removeTemplate(key) {
+      this.templates.splice(key, 1)
+    },
+    addTemplate(key) {
+      document.querySelector('#new-template').click()
+      this.clickedTemplateIndex = key
+    },
+    onProjectImageUpload({target, dataTransfer}) {
+      const files = target.files || dataTransfer.files
+      if (!files.length)
+        return
+      this.createImage(files[0], target.id)
+    },
+    createImage(file, id) {
+      // const image = new Image()
+      const reader = new FileReader()
+      reader.onload = ({target}) => {
+        // const a = document.querySelector('#new-template').value
+        const newTemplate = {
+          pathLong: target.result
+        }
+        this.templates.splice(this.clickedTemplateIndex + 1, 0, newTemplate)
+      }
+      reader.readAsDataURL(file)
+    },
   },
   computed: {
     ...mapGetters([
