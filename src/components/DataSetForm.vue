@@ -69,7 +69,11 @@ export default {
       dragOffsetX: null,
       dragOffsetY: null,
       dragActive: '',
-      clickedTemplateIndex: null
+      clickedTemplateIndex: null,
+      svgWidthRatio: null,
+      svgHeightRatio: null,
+      origWidth: null,
+      origHeight: null
     }
   },
   methods: {
@@ -82,15 +86,39 @@ export default {
     applyTemplate(evt) {
       const obj = document.getElementById('selectedTemplate').contentDocument
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate) {
+        const svg = obj.getElementsByTagName('svg')[0]
+        const viewBox = svg.getAttribute('viewBox').split(' ')
+        const twidth = document.getElementById('selectedTemplate').offsetWidth
+        const theight = document.getElementById('selectedTemplate').offsetHeight
+        this.origWidth = viewBox[2]
+        this.origHeight = viewBox[3]
+        this.svgWidthRatio = twidth / this.origWidth
+        this.svgHeightRatio = theight / this.origHeight
+        this.svgData = svg
+        
         this.setImages(obj, '__x003c_LOGOPANEL_x003e_', this.getProjectLogo)
         this.setImages(obj, '__x003c_PROJECTIMAGEPANEL_x003e_', this.getProjectImage)
         this.applyText(obj)
-        const svg = obj.getElementsByTagName('svg')[0]
         // svg.getElementsByTagName('rect')[0].remove()
-        this.svgData = svg
+        
 
-        const viewBox = svg.getAttribute('viewBox').split(' ')
-        this.drawToCanvas(viewBox[2], viewBox[3])
+
+        svg.setAttribute('viewBox', `0 0 ${twidth} ${theight}`)
+
+        this.drawToCanvas(this.origWidth, this.origHeight)
+        svg.setAttribute('width', twidth)
+        svg.setAttribute('height', theight)
+        
+        console.log(svg.getElementsByTagName('rect'))
+        const rects = [...svg.getElementsByTagName('rect')]
+
+        rects.forEach(rect => {
+          rect.setAttribute('width', rect.getAttribute('width') * this.svgWidthRatio)
+          rect.setAttribute('height', rect.getAttribute('height') * this.svgHeightRatio)
+          rect.setAttribute('x', rect.getAttribute('x') * this.svgWidthRatio)
+          rect.setAttribute('y', rect.getAttribute('y') * this.svgHeightRatio)
+        })
+
         this.obj = document.getElementById('selectedTemplate').contentDocument
 
       } else {
@@ -103,7 +131,6 @@ export default {
     clickImage(image) {
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate){
         this.selectedTemplate = image
-
       } else {
         alert('All fields are required')
       }
@@ -111,10 +138,10 @@ export default {
     setImages(obj, id, src) { // for public function
       const parent = obj.getElementById('Layer_x0020_1')
       const img = obj.getElementById(id)
-      const x = img.getAttribute('x') || 0
-      const y = img.getAttribute('y') || 0
-      const width = img.getAttribute('width') || 0
-      const height = img.getAttribute('height') || 0
+      const x = img.getAttribute('x') * this.svgWidthRatio || 0
+      const y = img.getAttribute('y') * this.svgHeightRatio || 0
+      const width = img.getAttribute('width') * this.svgWidthRatio || 0
+      const height = img.getAttribute('height') * this.svgHeightRatio || 0
 
       img.setAttribute('class', '')
       img.setAttribute('fill', 'transparent')
@@ -155,31 +182,35 @@ export default {
         if (texts.hasOwnProperty(key)) {
           if(texts[key].innerHTML.includes('PROJECTNAME')) {
             // texts[key].innerHTML = this.getProjectName
-            const x = texts[key].getAttribute('x')
-            const y = texts[key].getAttribute('y')
+            const x = texts[key].getAttribute('x') * this.svgWidthRatio
+            const y = texts[key].getAttribute('y') * this.svgHeightRatio
             const classList = texts[key].getAttribute('class')
+            const fontSize = parseFloat(window.getComputedStyle(texts[key], null).getPropertyValue('font-size')) * this.svgHeightRatio
+
             texts[key].remove()
 
             const newText = document.createElementNS(svgns, 'text')
+            newText.innerHTML = `<tspan font-size='${fontSize}px'>${this.getProjectName}</tspan>`
+            newText.setAttribute('class', classList)
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
-            newText.setAttribute('class', classList)
-            newText.innerHTML = this.getProjectName
             
             parent.append(newText)
           }
           if(texts[key].innerHTML.includes('VERSIONDATE')) {
             // texts[key].innerHTML = this.getVersionDate
-            const x = texts[key].getAttribute('x')
-            const y = texts[key].getAttribute('y')
+            const x = texts[key].getAttribute('x') * this.svgWidthRatio
+            const y = texts[key].getAttribute('y') * this.svgHeightRatio
             const classList = texts[key].getAttribute('class')
+            const fontSize = parseFloat(window.getComputedStyle(texts[key], null).getPropertyValue('font-size')) * this.svgHeightRatio
+
             texts[key].remove()
-            
+
             const newText = document.createElementNS(svgns, 'text')
+            newText.innerHTML = `<tspan font-size='${fontSize}px'>${this.getVersionDate}</tspan>`
+            newText.setAttribute('class', classList)
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
-            newText.setAttribute('class', classList)
-            newText.innerHTML = this.getVersionDate
             
             parent.append(newText)
           }
@@ -247,11 +278,12 @@ export default {
       if (this.dragActive) {
         this.dragOffsetY = offsetY - this.obj.getElementById(this.dragActive).y.baseVal.value
         this.dragOffsetX = offsetX - this.obj.getElementById(this.dragActive).x.baseVal.value
+        // console.log('x', offsetX)
   
         this.obj.getElementsByTagName('svg')[0].addEventListener('mousemove', this.move)
         this.obj.getElementsByTagName('svg')[0].addEventListener('mouseup', this.drop)
       }
-
+      this.obj.getElementById(this.dragActive).classList.add('selectedEl')
       // this.dragOffsetX = offsetX - this.square.x;
       // this.dragOffsetY = offsetY - this.square.y;\
       // this.dragOffsetX = offsetX - target.x.baseVal.value
@@ -261,17 +293,22 @@ export default {
       this.dragOffsetX = this.dragOffsetY = this.dragActive = null;
       this.obj.getElementsByTagName('svg')[0].removeEventListener('mousemove', this.move)
       this.obj.getElementsByTagName('svg')[0].removeEventListener('mouseup', this)
-      // const viewBox = this.svgData.getAttribute('viewBox').split(' ')
+      const viewBox = this.svgData.getAttribute('viewBox').split(' ')
       // this.drawToCanvas(viewBox[2], viewBox[3])
-
+      // console.log(viewBox[2], viewBox[3])
     },
     move({offsetX, offsetY, target}) {
       let x = offsetX - this.dragOffsetX
       let y = offsetY - this.dragOffsetY
       
-      this.obj.getElementById(this.dragActive).x.baseVal.value = x
-      this.obj.getElementById(this.dragActive).y.baseVal.value = y
-
+      // this.obj.getElementById(this.dragActive).x = x
+      // this.obj.getElementById(this.dragActive).y = y
+      this.obj.getElementById(this.dragActive).setAttribute('x', x)
+      this.obj.getElementById(this.dragActive).setAttribute('y', y)
+      // Todo: Rescale everything
+        // console.log('x', x)
+      // this.obj.getElementById(this.dragActive).setAttribute('transform', `translate(${offsetX} ${offsetY})`)
+      // this.obj.getElementById(this.dragActive).transform = `translate(${offsetX} ${offsetY})`
       // this.square.x = offsetX - this.dragOffsetX;
       // this.square.y = offsetY - this.dragOffsetY;
     },
@@ -464,5 +501,9 @@ button {
 
 .fill-white {
   fill: #fff;
+}
+
+.selectedEl {
+  border: 2px solid royalblue;
 }
 </style>
