@@ -69,11 +69,13 @@ export default {
       dragOffsetX: null,
       dragOffsetY: null,
       dragActive: '',
+      previousDragActive: null,
       clickedTemplateIndex: null,
       svgWidthRatio: null,
       svgHeightRatio: null,
       origWidth: null,
-      origHeight: null
+      origHeight: null,
+      newRect: null
     }
   },
   methods: {
@@ -181,39 +183,38 @@ export default {
       for (var key in texts) {
         if (texts.hasOwnProperty(key)) {
           if(texts[key].innerHTML.includes('PROJECTNAME')) {
-            // texts[key].innerHTML = this.getProjectName
             const x = texts[key].getAttribute('x') * this.svgWidthRatio
             const y = texts[key].getAttribute('y') * this.svgHeightRatio
             const classList = texts[key].getAttribute('class')
             const fontSize = parseFloat(window.getComputedStyle(texts[key], null).getPropertyValue('font-size')) * this.svgHeightRatio
-
+  
             texts[key].remove()
-
+  
             const newText = document.createElementNS(svgns, 'text')
             newText.innerHTML = `<tspan font-size='${fontSize}px'>${this.getProjectName}</tspan>`
             newText.setAttribute('class', classList)
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
-            
             parent.append(newText)
+
           }
           if(texts[key].innerHTML.includes('VERSIONDATE')) {
-            // texts[key].innerHTML = this.getVersionDate
             const x = texts[key].getAttribute('x') * this.svgWidthRatio
             const y = texts[key].getAttribute('y') * this.svgHeightRatio
             const classList = texts[key].getAttribute('class')
             const fontSize = parseFloat(window.getComputedStyle(texts[key], null).getPropertyValue('font-size')) * this.svgHeightRatio
-
+  
             texts[key].remove()
-
+  
             const newText = document.createElementNS(svgns, 'text')
             newText.innerHTML = `<tspan font-size='${fontSize}px'>${this.getVersionDate}</tspan>`
             newText.setAttribute('class', classList)
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
-            
+            newText.addEventListener('click', function(){ alert('ok') })
             parent.append(newText)
           }
+          
         }
       }
     },
@@ -276,24 +277,35 @@ export default {
         this.dragActive = target.id
       // }
       if (this.dragActive) {
+        
         this.dragOffsetY = offsetY - this.obj.getElementById(this.dragActive).y.baseVal.value
         this.dragOffsetX = offsetX - this.obj.getElementById(this.dragActive).x.baseVal.value
         // console.log('x', offsetX)
-  
+        // console.log(target.getAttribute('width'))\
+        if (this.previousDragActive && this.previousDragActive !== target.id) {
+          this.obj.getElementById('selectedRect')?.remove()
+          this.newRect = null
+        }
+
+        if(this.newRect === null) {
+          this.selectedElementRect(target)
+        }
+        
         this.obj.getElementsByTagName('svg')[0].addEventListener('mousemove', this.move)
         this.obj.getElementsByTagName('svg')[0].addEventListener('mouseup', this.drop)
       }
       this.obj.getElementById(this.dragActive).classList.add('selectedEl')
-      // this.dragOffsetX = offsetX - this.square.x;
-      // this.dragOffsetY = offsetY - this.square.y;\
-      // this.dragOffsetX = offsetX - target.x.baseVal.value
-      // this.dragOffsetY = offsetY - target.y.baseVal.value
     },
     drop() {
-      this.dragOffsetX = this.dragOffsetY = this.dragActive = null;
+      this.dragOffsetX = this.dragOffsetY = null;
       this.obj.getElementsByTagName('svg')[0].removeEventListener('mousemove', this.move)
       this.obj.getElementsByTagName('svg')[0].removeEventListener('mouseup', this)
       const viewBox = this.svgData.getAttribute('viewBox').split(' ')
+      this.previousDragActive = this.dragActive
+      if (!this.dragActive) {
+        this.dragActive = null
+        this.obj.getElementById('selectedRect').remove()
+      }
       // this.drawToCanvas(viewBox[2], viewBox[3])
       // console.log(viewBox[2], viewBox[3])
     },
@@ -301,16 +313,28 @@ export default {
       let x = offsetX - this.dragOffsetX
       let y = offsetY - this.dragOffsetY
       
-      // this.obj.getElementById(this.dragActive).x = x
-      // this.obj.getElementById(this.dragActive).y = y
       this.obj.getElementById(this.dragActive).setAttribute('x', x)
       this.obj.getElementById(this.dragActive).setAttribute('y', y)
+
+      this.newRect.setAttribute('x', x)
+      this.newRect.setAttribute('y', y)
+
       // Todo: Rescale everything
-        // console.log('x', x)
-      // this.obj.getElementById(this.dragActive).setAttribute('transform', `translate(${offsetX} ${offsetY})`)
-      // this.obj.getElementById(this.dragActive).transform = `translate(${offsetX} ${offsetY})`
-      // this.square.x = offsetX - this.dragOffsetX;
-      // this.square.y = offsetY - this.dragOffsetY;
+    },
+    selectedElementRect(target) {
+      const svgns = "http://www.w3.org/2000/svg";
+
+      this.newRect = document.createElementNS(svgns, 'rect')
+      this.newRect.setAttribute('id', 'selectedRect')
+      this.newRect.setAttribute('x', target.getAttribute('x'))
+      this.newRect.setAttribute('y', target.getAttribute('y'))
+      this.newRect.setAttribute('width', target.getAttribute('width'))
+      this.newRect.setAttribute('height', target.getAttribute('height'))
+      // newRect.setAttribute('style', 'fill:none;stroke:black;stroke-width:1')
+      this.newRect.setAttribute('fill', 'transparent')
+      this.newRect.setAttribute('class', 'str0')
+      // this.newRect = newRect
+      target.parentNode.insertBefore(this.newRect, target);
     },
     moveDown(key) {
       console.log(key)
