@@ -39,15 +39,15 @@
           </div>
         </div>
         <!-- <object :data="selectedTemplate" type="" id="selectedTemplate" @load="applyTemplate"></object> -->
-        <div id="test"></div>
+        <div id="selectedTemplate"></div>
         <canvas id="canvas" style="background: #fff;"></canvas>
       </div>
-      <div id="test"></div>
     </div>
     <!-- <div style="position:absolute; right: 20px; width: 200px; min-height: 300px; z-index: 10000; background: #fff;">
       <input
         type="text"
         :value="getVersionDate"
+        Change text
       >
     </div> -->
   </div>
@@ -100,7 +100,7 @@ export default {
       this.handlePage(1)
     },
     applyTemplate() {
-      const obj = document.getElementById('test')
+      const obj = document.getElementById('selectedTemplate')
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate) {
         const svg = obj.getElementsByTagName('svg')[0]
         svg.setAttribute('id', 'svg-container')
@@ -111,7 +111,7 @@ export default {
         this.setImages(svg, '__x003c_LOGOPANEL_x003e_', this.getProjectLogo)
         this.applyText(svg)
 
-        this.obj = document.getElementById('test')
+        this.obj = document.getElementById('selectedTemplate')
         this.svgData = svg
         
         const viewBox = svg.getAttribute('viewBox').split(' ')
@@ -130,9 +130,9 @@ export default {
         
         xhr.open("GET",image,false);
         xhr.overrideMimeType("image/svg+xml");
-        document.getElementById("test").innerHTML = null
+        document.getElementById("selectedTemplate").innerHTML = null
         xhr.onload = function(e) {
-          document.getElementById("test").appendChild(xhr.responseXML.documentElement);
+          document.getElementById("selectedTemplate").appendChild(xhr.responseXML.documentElement);
         }
         xhr.send("");
 
@@ -321,7 +321,7 @@ export default {
         }
       })
 
-      var specifiedElement = document.getElementById('test');
+      var specifiedElement = document.getElementById('selectedTemplate');
 
       document.addEventListener('click', function(event) {
         var isClickInside = specifiedElement.contains(event.target);
@@ -516,10 +516,6 @@ button {
 }
 
 #selectedTemplate {
-  max-width: 100%;
-  max-height: 100%;
-}
-#test {
   max-width: 100%;
   max-height: 100%;
 }
