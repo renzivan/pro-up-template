@@ -44,6 +44,12 @@
       </div>
       <div id="test"></div>
     </div>
+    <!-- <div style="position:absolute; right: 20px; width: 200px; min-height: 300px; z-index: 10000; background: #fff;">
+      <input
+        type="text"
+        :value="getVersionDate"
+      >
+    </div> -->
   </div>
 </template>
 
@@ -107,6 +113,9 @@ export default {
 
         this.obj = document.getElementById('test')
         this.svgData = svg
+        
+        const viewBox = svg.getAttribute('viewBox').split(' ')
+        this.drawToCanvas(viewBox[2], viewBox[3])
       } else {
         alert('All fields are required')
       }
@@ -213,11 +222,16 @@ export default {
     drawToCanvas(width, height) {
       this.svgData.getElementsByTagName('rect')[0].setAttribute('fill', '#fff')
       this.svgData.getElementsByTagName('rect')[0].setAttribute('class', 'str0') // <-- Might Change
-      
+      this.deselectEl()
+
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
       const data = (new XMLSerializer()).serializeToString(this.svgData);
       const DOMURL = window.URL || window.webkitURL || window;
+      
+      if (this.dragActive) {
+        this.makeDraggable()
+      }
 
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, width, height);
@@ -266,6 +280,9 @@ export default {
     },
     drag({offsetX, offsetY, target, detail}) {
       this.dragActive = target.id
+      this.makeDraggable()
+    },
+    makeDraggable(){
       const self = this
 
       this.deselectEl()
@@ -280,6 +297,8 @@ export default {
         onRotate(rad) {
         },
         onDrop(e, el) {
+          const viewBox = self.svgData.getAttribute('viewBox').split(' ')
+          self.drawToCanvas(viewBox[2], viewBox[3])
         },
         onDestroy(el) {
         }
@@ -302,7 +321,6 @@ export default {
         }
       })
 
-
       var specifiedElement = document.getElementById('test');
 
       document.addEventListener('click', function(event) {
@@ -311,7 +329,6 @@ export default {
             self.deselectEl()
         }
       });
-
     },
     deselectEl() {
       if (this.xDraggables) {
