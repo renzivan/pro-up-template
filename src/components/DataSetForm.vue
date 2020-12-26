@@ -38,10 +38,18 @@
             </button>
           </div>
         </div>
-        <object :data="selectedTemplate" type="" id="selectedTemplate" @load="applyTemplate"></object>
+        <!-- <object :data="selectedTemplate" type="" id="selectedTemplate" @load="applyTemplate"></object> -->
+        <div id="selectedTemplate"></div>
         <canvas id="canvas" style="background: #fff;"></canvas>
       </div>
     </div>
+    <!-- <div style="position:absolute; right: 20px; width: 200px; min-height: 300px; z-index: 10000; background: #fff;">
+      <input
+        type="text"
+        :value="getVersionDate"
+        Change text
+      >
+    </div> -->
   </div>
 </template>
 
@@ -49,6 +57,10 @@
 import { saveAs } from 'file-saver'
 import { jsPDF } from 'jspdf'
 import { mapActions, mapGetters } from 'vuex'
+ 
+import subjx from 'subjx';
+import 'subjx/dist/style/subjx.css';
+
 
 export default {
   name: 'DataSetForm',
@@ -75,7 +87,9 @@ export default {
       svgHeightRatio: null,
       origWidth: null,
       origHeight: null,
-      newRect: null
+      newRect: null,
+      xElem: null,
+      xDraggables: null
     }
   },
   methods: {
@@ -85,44 +99,23 @@ export default {
     previousPage() {
       this.handlePage(1)
     },
-    applyTemplate(evt) {
-      const obj = document.getElementById('selectedTemplate').contentDocument
+    applyTemplate() {
+      const obj = document.getElementById('selectedTemplate')
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate) {
         const svg = obj.getElementsByTagName('svg')[0]
-        const viewBox = svg.getAttribute('viewBox').split(' ')
-        const twidth = document.getElementById('selectedTemplate').offsetWidth
-        const theight = document.getElementById('selectedTemplate').offsetHeight
-        this.origWidth = viewBox[2]
-        this.origHeight = viewBox[3]
-        this.svgWidthRatio = twidth / this.origWidth
-        this.svgHeightRatio = theight / this.origHeight
+        svg.setAttribute('id', 'svg-container')
+        svg.style.maxWidth = '100%'
+        svg.style.height = '100%'
+
+        this.setImages(svg, '__x003c_PROJECTIMAGEPANEL_x003e_', this.getProjectImage)
+        this.setImages(svg, '__x003c_LOGOPANEL_x003e_', this.getProjectLogo)
+        this.applyText(svg)
+
+        this.obj = document.getElementById('selectedTemplate')
         this.svgData = svg
         
-        this.setImages(obj, '__x003c_LOGOPANEL_x003e_', this.getProjectLogo)
-        this.setImages(obj, '__x003c_PROJECTIMAGEPANEL_x003e_', this.getProjectImage)
-        this.applyText(obj)
-        // svg.getElementsByTagName('rect')[0].remove()
-        
-
-
-        svg.setAttribute('viewBox', `0 0 ${twidth} ${theight}`)
-
-        this.drawToCanvas(this.origWidth, this.origHeight)
-        svg.setAttribute('width', twidth)
-        svg.setAttribute('height', theight)
-        
-        console.log(svg.getElementsByTagName('rect'))
-        const rects = [...svg.getElementsByTagName('rect')]
-
-        rects.forEach(rect => {
-          rect.setAttribute('width', rect.getAttribute('width') * this.svgWidthRatio)
-          rect.setAttribute('height', rect.getAttribute('height') * this.svgHeightRatio)
-          rect.setAttribute('x', rect.getAttribute('x') * this.svgWidthRatio)
-          rect.setAttribute('y', rect.getAttribute('y') * this.svgHeightRatio)
-        })
-
-        this.obj = document.getElementById('selectedTemplate').contentDocument
-
+        const viewBox = svg.getAttribute('viewBox').split(' ')
+        this.drawToCanvas(viewBox[2], viewBox[3])
       } else {
         alert('All fields are required')
       }
@@ -133,6 +126,17 @@ export default {
     clickImage(image) {
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate){
         this.selectedTemplate = image
+        const xhr = new XMLHttpRequest();
+        
+        xhr.open("GET",image,false);
+        xhr.overrideMimeType("image/svg+xml");
+        document.getElementById("selectedTemplate").innerHTML = null
+        xhr.onload = function(e) {
+          document.getElementById("selectedTemplate").appendChild(xhr.responseXML.documentElement);
+        }
+        xhr.send("");
+
+        this.applyTemplate()
       } else {
         alert('All fields are required')
       }
@@ -140,10 +144,10 @@ export default {
     setImages(obj, id, src) { // for public function
       const parent = obj.getElementById('Layer_x0020_1')
       const img = obj.getElementById(id)
-      const x = img.getAttribute('x') * this.svgWidthRatio || 0
-      const y = img.getAttribute('y') * this.svgHeightRatio || 0
-      const width = img.getAttribute('width') * this.svgWidthRatio || 0
-      const height = img.getAttribute('height') * this.svgHeightRatio || 0
+      const x = img.getAttribute('x')
+      const y = img.getAttribute('y')
+      const width = img.getAttribute('width')
+      const height = img.getAttribute('height')
 
       img.setAttribute('class', '')
       img.setAttribute('fill', 'transparent')
@@ -166,7 +170,7 @@ export default {
       
       // newImg.addEventListener('dblclick', this.setDragActive)
       newImg.addEventListener('mousedown', this.drag)
-      newImg.addEventListener('mouseup', this.drop)
+      // newImg.addEventListener('mouseup', this.drop)
       return newImg
     },
     applyText(obj) { // possible for public function
@@ -183,49 +187,51 @@ export default {
       for (var key in texts) {
         if (texts.hasOwnProperty(key)) {
           if(texts[key].innerHTML.includes('PROJECTNAME')) {
-            const x = texts[key].getAttribute('x') * this.svgWidthRatio
-            const y = texts[key].getAttribute('y') * this.svgHeightRatio
+            // texts[key].innerHTML = this.projectName
+            const x = texts[key].getAttribute('x')
+            const y = texts[key].getAttribute('y')
             const classList = texts[key].getAttribute('class')
-            const fontSize = parseFloat(window.getComputedStyle(texts[key], null).getPropertyValue('font-size')) * this.svgHeightRatio
-  
             texts[key].remove()
-  
+
             const newText = document.createElementNS(svgns, 'text')
-            newText.innerHTML = `<tspan font-size='${fontSize}px'>${this.getProjectName}</tspan>`
-            newText.setAttribute('class', classList)
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
+            newText.setAttribute('class', classList)
+            newText.innerHTML = this.getProjectName
+            
             parent.append(newText)
-
           }
           if(texts[key].innerHTML.includes('VERSIONDATE')) {
-            const x = texts[key].getAttribute('x') * this.svgWidthRatio
-            const y = texts[key].getAttribute('y') * this.svgHeightRatio
+            // texts[key].innerHTML = this.versionDate
+            const x = texts[key].getAttribute('x')
+            const y = texts[key].getAttribute('y')
             const classList = texts[key].getAttribute('class')
-            const fontSize = parseFloat(window.getComputedStyle(texts[key], null).getPropertyValue('font-size')) * this.svgHeightRatio
-  
             texts[key].remove()
-  
+            
             const newText = document.createElementNS(svgns, 'text')
-            newText.innerHTML = `<tspan font-size='${fontSize}px'>${this.getVersionDate}</tspan>`
-            newText.setAttribute('class', classList)
             newText.setAttribute('x', x)
             newText.setAttribute('y', y)
-            newText.addEventListener('click', function(){ alert('ok') })
+            newText.setAttribute('class', classList)
+            newText.innerHTML = this.getVersionDate
+            
             parent.append(newText)
           }
-          
         }
       }
     },
     drawToCanvas(width, height) {
       this.svgData.getElementsByTagName('rect')[0].setAttribute('fill', '#fff')
       this.svgData.getElementsByTagName('rect')[0].setAttribute('class', 'str0') // <-- Might Change
-      
+      this.deselectEl()
+
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
       const data = (new XMLSerializer()).serializeToString(this.svgData);
       const DOMURL = window.URL || window.webkitURL || window;
+      
+      if (this.dragActive) {
+        this.makeDraggable()
+      }
 
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, width, height);
@@ -273,71 +279,66 @@ export default {
       pdf.save('Generated Template.pdf')
     },
     drag({offsetX, offsetY, target, detail}) {
-      // if (detail == 2) {
-        this.dragActive = target.id
-      // }
-      if (this.dragActive) {
-        
-        this.dragOffsetY = offsetY - this.obj.getElementById(this.dragActive).y.baseVal.value
-        this.dragOffsetX = offsetX - this.obj.getElementById(this.dragActive).x.baseVal.value
-        // console.log('x', offsetX)
-        // console.log(target.getAttribute('width'))\
-        if (this.previousDragActive && this.previousDragActive !== target.id) {
-          this.obj.getElementById('selectedRect')?.remove()
-          this.newRect = null
+      this.dragActive = target.id
+      this.makeDraggable()
+    },
+    makeDraggable(){
+      const self = this
+
+      this.deselectEl()
+      const methods = {
+        onInit(el) {
+          
+        },
+        onMove() {
+        },
+        onResize(dx, dy, handle) {
+        },
+        onRotate(rad) {
+        },
+        onDrop(e, el) {
+          const viewBox = self.svgData.getAttribute('viewBox').split(' ')
+          self.drawToCanvas(viewBox[2], viewBox[3])
+        },
+        onDestroy(el) {
         }
+      };
+      const svgOptions = {
+        container: '#svg-container',
+        each: {
+          resize: true,
+          rotate: false
+        },
+        ...methods
+      };
+      this.xElem = subjx(`#${this.dragActive}`)
+      this.xDraggables = this.xElem.drag(svgOptions);
 
-        if(this.newRect === null) {
-          this.selectedElementRect(target)
+      const { handles } = this.xDraggables[0].storage;
+      Object.entries(handles).forEach(c => {
+        if(c[1]?.localName === 'circle' && c[0] !== 'center') {
+          c[1].setAttribute('r', '20')
         }
-        
-        this.obj.getElementsByTagName('svg')[0].addEventListener('mousemove', this.move)
-        this.obj.getElementsByTagName('svg')[0].addEventListener('mouseup', this.drop)
+      })
+
+      var specifiedElement = document.getElementById('selectedTemplate');
+
+      document.addEventListener('click', function(event) {
+        var isClickInside = specifiedElement.contains(event.target);
+        if (!isClickInside) {
+            self.deselectEl()
+        }
+      });
+    },
+    deselectEl() {
+      if (this.xDraggables) {
+        this.xDraggables.forEach(item => {
+            item.disable();
+        });
       }
-      this.obj.getElementById(this.dragActive).classList.add('selectedEl')
-    },
-    drop() {
-      this.dragOffsetX = this.dragOffsetY = null;
-      this.obj.getElementsByTagName('svg')[0].removeEventListener('mousemove', this.move)
-      this.obj.getElementsByTagName('svg')[0].removeEventListener('mouseup', this)
-      const viewBox = this.svgData.getAttribute('viewBox').split(' ')
-      this.previousDragActive = this.dragActive
-      if (!this.dragActive) {
-        this.dragActive = null
-        this.obj.getElementById('selectedRect').remove()
-      }
-      // this.drawToCanvas(viewBox[2], viewBox[3])
-      // console.log(viewBox[2], viewBox[3])
-    },
-    move({offsetX, offsetY, target}) {
-      let x = offsetX - this.dragOffsetX
-      let y = offsetY - this.dragOffsetY
-      
-      this.obj.getElementById(this.dragActive).setAttribute('x', x)
-      this.obj.getElementById(this.dragActive).setAttribute('y', y)
 
-      this.newRect.setAttribute('x', x)
-      this.newRect.setAttribute('y', y)
-
-      // Todo: Rescale everything
-    },
-    selectedElementRect(target) {
-      const svgns = "http://www.w3.org/2000/svg";
-
-      this.newRect = document.createElementNS(svgns, 'rect')
-      this.newRect.setAttribute('id', 'selectedRect')
-      this.newRect.setAttribute('x', target.getAttribute('x'))
-      this.newRect.setAttribute('y', target.getAttribute('y'))
-      this.newRect.setAttribute('width', target.getAttribute('width'))
-      this.newRect.setAttribute('height', target.getAttribute('height'))
-      // newRect.setAttribute('style', 'fill:none;stroke:black;stroke-width:1')
-      this.newRect.setAttribute('fill', 'transparent')
-      this.newRect.setAttribute('class', 'str0')
-      // this.newRect = newRect
-      target.parentNode.insertBefore(this.newRect, target);
     },
     moveDown(key) {
-      console.log(key)
       if (key + 1 < this.templates.length ) {
         const temp = this.templates[key + 1]
         this.$set(this.templates, key + 1, this.templates[key])
@@ -347,7 +348,6 @@ export default {
       }
     },
     moveUp(key) {
-      console.log(key)
       if (key !== 0 ) {
         const temp = this.templates[key - 1]
         this.$set(this.templates, key - 1, this.templates[key])
@@ -393,6 +393,7 @@ export default {
   },
   mounted() {
     this.importAll(require.context('../assets/templates', true, /\.svg$/));
+    
   },
 }
 </script>
