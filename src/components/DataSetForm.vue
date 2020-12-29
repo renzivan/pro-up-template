@@ -43,13 +43,22 @@
         <canvas id="canvas" style="background: #fff;"></canvas>
       </div>
     </div>
-    <!-- <div style="position:absolute; right: 20px; width: 200px; min-height: 300px; z-index: 10000; background: #fff;">
+    <div v-show="dragActive" class="templates__live-edit" style="position:absolute; right: 0; top: 0; bottom: 0; width: 280px; min-height: 300px; z-index: 10000; background: #fff; padding: 30px; border: 1px solid #aaa; border-radius: 4px;">
+      <h4> Edit {{ dragActiveLabel }}</h4>
       <input
+        class="live-edit-text"
+        v-if="dragActive === 'project-name'"
         type="text"
-        :value="getVersionDate"
-        Change text
+        v-model="projectName"
       >
-    </div> -->
+      <input
+        v-if="dragActive === 'version-date'"
+        type="date"
+        v-model="versionDate"
+        class="live-edit-text"
+      >
+      <!-- <button @click=""> </button> -->
+    </div>
   </div>
 </template>
 
@@ -81,6 +90,7 @@ export default {
       dragOffsetX: null,
       dragOffsetY: null,
       dragActive: '',
+      dragActiveLabel: '',
       previousDragActive: null,
       clickedTemplateIndex: null,
       svgWidthRatio: null,
@@ -92,17 +102,63 @@ export default {
       xDraggables: null
     }
   },
+  watch: {
+    dragActive(val) {
+      switch (val) {
+        case 'project-name':
+          this.dragActiveLabel = 'Project Name'
+          break;
+
+        case 'version-date':
+          this.dragActiveLabel = 'Version Date'
+          break;
+
+        case '__x003c_PROJECTIMAGEPANEL_x003e_':
+          this.dragActiveLabel = 'Project Image'
+          break;
+
+        case '__x003c_LOGOPANEL_x003e_':
+          this.dragActiveLabel = 'Logo'
+          break;
+
+      }
+
+    },
+    projectName(val) {
+      this.handleProjectName(val)
+      this.applyText()
+      if (this.dragActive) {
+        this.makeDraggable()
+      }
+    },
+    versionDate(val) {
+      this.handleVersionDate(val)
+      this.applyText()
+      if (this.dragActive) {
+        this.makeDraggable()
+      }
+    },
+  },
   methods: {
     ...mapActions([
-      'handlePage'
+      'handlePage',
+      'handleProjectName',
+      'handleVersionDate',
+      'handleProjectLogo',
+      'handleProjectImage'
     ]),
     previousPage() {
       this.handlePage(1)
     },
     applyTemplate() {
+      this.projectName = this.getProjectName
+      this.versionDate = this.getVersionDate
       const obj = document.getElementById('selectedTemplate')
       if (this.getProjectLogo && this.getProjectImage && this.getProjectName && this.getVersionDate) {
         const svg = obj.getElementsByTagName('svg')[0]
+        this.obj = document.getElementById('selectedTemplate')
+        this.svgData = svg
+
         svg.setAttribute('id', 'svg-container')
         svg.style.maxWidth = '100%'
         svg.style.height = '100%'
@@ -111,8 +167,6 @@ export default {
         this.setImages(svg, '__x003c_LOGOPANEL_x003e_', this.getProjectLogo)
         this.applyText(svg)
 
-        this.obj = document.getElementById('selectedTemplate')
-        this.svgData = svg
         
         const viewBox = svg.getAttribute('viewBox').split(' ')
         this.drawToCanvas(viewBox[2], viewBox[3])
@@ -173,11 +227,11 @@ export default {
       // newImg.addEventListener('mouseup', this.drop)
       return newImg
     },
-    applyText(obj) { // possible for public function
-      const parent = obj.getElementById('Layer_x0020_1')
+    applyText() { // possible for public function
+      const parent = this.svgData.getElementById('Layer_x0020_1')
       const svgns = "http://www.w3.org/2000/svg";
-      const texts = obj.getElementsByTagName('text')
-      const infoPanel = obj.getElementById('__x003c_PROJECTINFOPANEL_x003e_')
+      const texts = this.svgData.getElementsByTagName('text')
+      const infoPanel = this.svgData.getElementById('__x003c_PROJECTINFOPANEL_x003e_')
 
       if (infoPanel) {
         infoPanel.setAttribute('class', '')
@@ -186,38 +240,55 @@ export default {
 
       for (var key in texts) {
         if (texts.hasOwnProperty(key)) {
-          if(texts[key].innerHTML.includes('PROJECTNAME')) {
+          if(texts[key].innerHTML.includes('PROJECTNAME') || texts[key].id === 'project-name') {
             // texts[key].innerHTML = this.projectName
             const x = texts[key].getAttribute('x')
             const y = texts[key].getAttribute('y')
+            const width = texts[key].getAttribute('width')
             const classList = texts[key].getAttribute('class')
+            const box = texts[key].getBBox()
+            const newX = texts[key].id === 'project-name' ? x : parseFloat(x) + parseFloat(box.width / 2)
             texts[key].remove()
 
             const newText = document.createElementNS(svgns, 'text')
-            newText.setAttribute('x', x)
+            newText.setAttribute('id', 'project-name')
+            newText.setAttribute('x', newX)
             newText.setAttribute('y', y)
+            newText.setAttribute('text-anchor', 'middle')
             newText.setAttribute('class', classList)
+            newText.setAttribute('font-weight', 500)
             newText.innerHTML = this.getProjectName
-            
+
+            newText.onmousedown = this.drag
+
             parent.append(newText)
           }
-          if(texts[key].innerHTML.includes('VERSIONDATE')) {
-            // texts[key].innerHTML = this.versionDate
+          if(texts[key].innerHTML.includes('VERSIONDATE') || texts[key].id === 'version-date') {
             const x = texts[key].getAttribute('x')
             const y = texts[key].getAttribute('y')
             const classList = texts[key].getAttribute('class')
+            const box = texts[key].getBBox()
+            const newX = texts[key].id === 'version-date' ? x : parseFloat(x) + parseFloat(box.width / 2)
             texts[key].remove()
             
             const newText = document.createElementNS(svgns, 'text')
-            newText.setAttribute('x', x)
+            // newText.setAttribute('x', x)
+            newText.setAttribute('id', 'version-date')
+            newText.setAttribute('x', newX)
             newText.setAttribute('y', y)
+            newText.setAttribute('text-anchor', 'middle')
             newText.setAttribute('class', classList)
             newText.innerHTML = this.getVersionDate
+
+            newText.onmousedown = this.drag
             
             parent.append(newText)
           }
         }
       }
+    },
+    saveEditedText() {
+
     },
     drawToCanvas(width, height) {
       this.svgData.getElementsByTagName('rect')[0].setAttribute('fill', '#fff')
@@ -323,10 +394,11 @@ export default {
 
       var specifiedElement = document.getElementById('selectedTemplate');
 
-      document.addEventListener('click', function(event) {
+      document.addEventListener('mousedown', function(event) {
         var isClickInside = specifiedElement.contains(event.target);
-        if (!isClickInside) {
-            self.deselectEl()
+        if (!isClickInside && event.target.className !== 'live-edit-text') {
+          self.dragActive = null
+          self.deselectEl()
         }
       });
     },
@@ -513,6 +585,23 @@ button {
 .templates__seleceted {
   width: 100%;
   padding: 10px
+}
+
+.templates__live-edit {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  min-height: 300px;
+  z-index: 10000;
+  background: #fff;
+  padding: 30px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  
 }
 
 #selectedTemplate {
