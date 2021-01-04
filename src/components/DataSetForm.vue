@@ -256,7 +256,7 @@ export default {
             newText.setAttribute('y', y)
             newText.setAttribute('text-anchor', 'middle')
             newText.setAttribute('class', classList)
-            newText.setAttribute('font-weight', 500)
+            newText.style.fontWeight = 700
             newText.innerHTML = this.getProjectName
 
             newText.onmousedown = this.drag
@@ -279,7 +279,6 @@ export default {
             newText.setAttribute('text-anchor', 'middle')
             newText.setAttribute('class', classList)
             newText.innerHTML = this.getVersionDate
-
             newText.onmousedown = this.drag
             
             parent.append(newText)
@@ -295,17 +294,17 @@ export default {
       this.svgData.getElementsByTagName('rect')[0].setAttribute('class', 'str0') // <-- Might Change
       this.deselectEl()
 
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      const data = (new XMLSerializer()).serializeToString(this.svgData);
-      const DOMURL = window.URL || window.webkitURL || window;
+      const canvas = document.getElementById('canvas')
+      const ctx = canvas.getContext('2d')
+      const data = (new XMLSerializer()).serializeToString(this.svgData)
+      const DOMURL = window.URL || window.webkitURL || window
       
       if (this.dragActive) {
         this.makeDraggable()
       }
 
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "white"
+      ctx.fillRect(0, 0, width, height)
 
       this.canvasWidth = width
       this.canvasHeight = height
@@ -314,8 +313,8 @@ export default {
       canvas.setAttribute('height', height)
 
       const img = new Image();
-      const svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
-      const url = DOMURL.createObjectURL(svgBlob);
+      const svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
+      const url = DOMURL.createObjectURL(svgBlob)
 
       img.onload = function () {
         ctx.drawImage(img, 0, 0, width-5, height-5)
@@ -326,9 +325,9 @@ export default {
             .replace('image/jpeg', 'image/octet-stream');
 
         this.imgURI = imgURI
-      };
+      }
 
-      img.src = url;
+      img.src = url
     },
     downloadFile() {
       const canvas = document.getElementById("canvas");
@@ -359,11 +358,10 @@ export default {
       this.deselectEl()
       const methods = {
         onInit(el) {
-          
         },
         onMove() {
         },
-        onResize(dx, dy, handle) {
+        onResize({clientX, clientY, dx, dy, width, height}) {
         },
         onRotate(rad) {
         },
@@ -373,29 +371,60 @@ export default {
         },
         onDestroy(el) {
         }
-      };
+      }
       const svgOptions = {
         container: '#svg-container',
+        proportions: true,
         each: {
           resize: true,
-          rotate: false
+          rotate: false,
         },
         ...methods
-      };
-      this.xElem = subjx(`#${this.dragActive}`)
-      this.xDraggables = this.xElem.drag(svgOptions);
+      }
 
-      const { handles } = this.xDraggables[0].storage;
+      this.xElem = subjx(`#${this.dragActive}`)
+      this.xDraggables = this.xElem.drag(svgOptions)
+
+      const { handles } = this.xDraggables[0].storage
+      this.changeHandleStyles(handles)
       Object.entries(handles).forEach(c => {
         if(c[1]?.localName === 'circle' && c[0] !== 'center') {
           c[1].setAttribute('r', '20')
         }
       })
+      
+      handles.tr.onmousedown = 
+      handles.tl.onmousedown = 
+      handles.br.onmousedown = 
+      handles.bl.onmousedown = function() {
+         self.xDraggables[0]._processOptions({
+            container: '#svg-container',
+            proportions: true,
+            each: {
+              resize: true,
+              rotate: false,
+            }
+          })
+      }
+
+      handles.tc.onmousedown = 
+      handles.bc.onmousedown = 
+      handles.ml.onmousedown = 
+      handles.mr.onmousedown = function() {
+         self.xDraggables[0]._processOptions({
+            container: '#svg-container',
+            proportions: false,
+            each: {
+              resize: true,
+              rotate: false,
+            }
+          })
+      }
 
       var specifiedElement = document.getElementById('selectedTemplate');
 
       document.addEventListener('mousedown', function(event) {
-        var isClickInside = specifiedElement.contains(event.target);
+        var isClickInside = specifiedElement.contains(event.target)
         if (!isClickInside && event.target.className !== 'live-edit-text') {
           self.dragActive = null
           self.deselectEl()
@@ -405,10 +434,39 @@ export default {
     deselectEl() {
       if (this.xDraggables) {
         this.xDraggables.forEach(item => {
-            item.disable();
-        });
+            item.disable()
+        })
       }
 
+    },
+    changeHandleStyles(handles) {
+      handles.tl.onmousedown = 
+      handles.br.onmousedown = 
+      handles.tl.onmouseover = 
+      handles.br.onmouseover = function() {
+        handles.tl.style.cursor = handles.br.style.cursor = 'nwse-resize'
+      }
+
+      handles.tr.onmousedown = 
+      handles.bl.onmousedown = 
+      handles.tr.onmouseover = 
+      handles.bl.onmouseover = function() {
+        handles.tr.style.cursor = handles.bl.style.cursor = 'nesw-resize'
+      }
+
+      handles.mr.onmousedown = 
+      handles.ml.onmousedown = 
+      handles.mr.onmouseover = 
+      handles.ml.onmouseover = function() {
+        handles.mr.style.cursor = handles.ml.style.cursor = 'ew-resize'
+      }
+
+      handles.tc.onmousedown = 
+      handles.bc.onmousedown = 
+      handles.tc.onmouseover = 
+      handles.bc.onmouseover = function() {
+        handles.tc.style.cursor = handles.bc.style.cursor = 'ns-resize'
+      }
     },
     moveDown(key) {
       if (key + 1 < this.templates.length ) {
