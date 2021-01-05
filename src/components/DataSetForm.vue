@@ -220,6 +220,7 @@ export default {
       newImg.setAttribute('height', height)
       newImg.setAttribute('href', src)
       newImg.setAttribute('id', id)
+      newImg.setAttribute('preserveAspectRatio', 'none')
       // Adding events
       
       // newImg.addEventListener('dblclick', this.setDragActive)
